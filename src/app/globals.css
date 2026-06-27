@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FBF8FD; /* Soft lavender app background */
+  --foreground: #2B2433; /* Cozy dark neutral body text */
+  --surface-bg: #FFFFFF;
+  --surface-muted: #F8F5FB;
+  --text-heading: #352B42;
+  --text-body: #2B2433;
+  --text-muted: #6B6275;
+  --border-color: #EFE9F7;
+  --border-focus: #9B7FD4;
+  --ring-color: rgba(155, 127, 212, 0.2);
+}
+
+.dark {
+  --background: #120E18; /* Cozy dark violet app background */
+  --foreground: #ECE6F2;
+  --surface-bg: #1B1624;
+  --surface-muted: #241E30;
+  --text-heading: #F5EEFC;
+  --text-body: #ECE6F2;
+  --text-muted: #A195B0;
+  --border-color: #2F263D;
+  --border-focus: #B69DF2;
+  --ring-color: rgba(182, 157, 242, 0.25);
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface-bg: var(--surface-bg);
+  --color-surface-muted: var(--surface-muted);
+  --color-text-heading: var(--text-heading);
+  --color-text-body: var(--text-body);
+  --color-text-muted: var(--text-muted);
+  --color-border-custom: var(--border-color);
+  --color-border-focus: var(--border-focus);
+  --color-ring-custom: var(--ring-color);
+
+  /* Habit-specific colors */
+  --color-habit-rose: #F4778E;
+  --color-habit-orange: #F2994A;
+  --color-habit-sky: #4FA8E0;
+  --color-habit-violet: #9B7FD4;
+  --color-habit-green: #5FB87B;
+  --color-habit-teal: #3FB8A6;
+  --color-habit-amber: #F2C94C;
+  --color-habit-pink: #EC4899;
+  --color-habit-indigo: #6366F1;
+  --color-habit-lime: #84CC16;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100vh;
+}
+
+/* Custom Scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Shimmer placeholder animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface-muted) 25%,
+    var(--border-color) 50%,
+    var(--surface-muted) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
