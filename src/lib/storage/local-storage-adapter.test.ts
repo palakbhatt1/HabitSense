@@ -14,17 +14,21 @@ const fakeLocalStorage = {
     }
   },
   length: 0,
-  key: (index: number) => null,
+  key: () => null,
 };
 
-(global as any).window = {} as any;
-(global as any).localStorage = fakeLocalStorage as any;
+const globalScope = globalThis as unknown as {
+  window: unknown;
+  localStorage: unknown;
+};
+globalScope.window = {};
+globalScope.localStorage = fakeLocalStorage;
 
 import { LocalStorageAdapter } from "./local-storage-adapter";
 import { Habit, ExportBundle } from "./types";
 import { CURRENT_SCHEMA_VERSION } from "./migrations";
 
-function assert(condition: any, message: string) {
+function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
     console.error(`❌ Assertion failed: ${message}`);
     process.exit(1);
@@ -80,7 +84,7 @@ async function runTests() {
 
   // Test 5: Sleep entries
   await adapter.setSleepEntry("2026-06-27", 7.5);
-  let sleep = await adapter.getSleepEntries({ from: "2026-06-26", to: "2026-06-28" });
+  const sleep = await adapter.getSleepEntries({ from: "2026-06-26", to: "2026-06-28" });
   assert(sleep.length === 1, "Sleep entries length must be 1");
   assert(sleep[0].hours === 7.5, "Sleep hours must match");
 
@@ -94,7 +98,7 @@ async function runTests() {
   const exported = await adapter.exportAll();
   assert(exported.habits.length === 1, "Export bundle should contain 1 habit");
   assert(exported.sleep.length === 1, "Export bundle should contain 1 sleep entry");
-  
+
   // Reset and Import empty
   fakeLocalStorage.clear();
   const emptyBundle: ExportBundle = {
@@ -134,12 +138,12 @@ async function runTests() {
     habits: [{ id: "h-old", name: "Old Habit", color: "pink", icon: "book", createdAt: "2026-01-01", archivedAt: null, sortOrder: 0 }],
   };
   fakeLocalStorage.setItem("habitsense:v1", JSON.stringify(legacyData));
-  
+
   // Reading should trigger auto-migration
   const migratedMeta = await adapter.getMeta();
   assert(migratedMeta.schemaVersion === CURRENT_SCHEMA_VERSION, "Migrated schemaVersion should be updated");
   assert(migratedMeta.dailyIntentions !== undefined, "dailyIntentions should be initialized");
-  
+
   const migratedHabits = await adapter.getHabits();
   assert(migratedHabits.length === 1 && migratedHabits[0].id === "h-old", "Legacy habits should survive migration");
 

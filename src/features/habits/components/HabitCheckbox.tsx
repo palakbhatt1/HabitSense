@@ -4,7 +4,6 @@ import React from "react";
 import { HabitColor } from "@/lib/storage/types";
 import { colorThemes } from "../utils/colors";
 import { Check, X } from "lucide-react";
-import { motion } from "framer-motion";
 
 interface HabitCheckboxProps {
   status: "done" | "missed" | "unmarked";
@@ -50,27 +49,21 @@ export function HabitCheckbox({
     >
       {/* Active Done State */}
       {status === "done" && (
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          exit={{ scale: 0 }}
+        <div
           style={{ backgroundColor: theme.checkboxBg }}
           className="absolute inset-0 flex items-center justify-center rounded-full text-white shadow-sm"
         >
           <Check className={`${iconSizes[size]} stroke-[3px]`} />
-        </motion.div>
+        </div>
       )}
 
       {/* Active Missed State */}
       {status === "missed" && (
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          exit={{ scale: 0 }}
+        <div
           className="absolute inset-0 flex items-center justify-center rounded-full bg-red-100 dark:bg-red-950/40 text-red-500 dark:text-red-400 border border-red-200 dark:border-red-900/30"
         >
           <X className={`${iconSizes[size]} stroke-[3.5px]`} />
-        </motion.div>
+        </div>
       )}
 
       {/* Unmarked Default State */}

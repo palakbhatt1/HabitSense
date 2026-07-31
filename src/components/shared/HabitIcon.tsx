@@ -24,6 +24,10 @@ interface HabitIconProps {
 }
 
 export function HabitIcon({ name, className }: HabitIconProps) {
-  const IconComponent = (Icons as any)[name] || Icons.HelpCircle;
+  const iconMap = Icons as unknown as Record<
+    string,
+    React.ComponentType<{ className?: string }>
+  >;
+  const IconComponent = iconMap[name] || Icons.CircleDot;
   return <IconComponent className={className} />;
 }

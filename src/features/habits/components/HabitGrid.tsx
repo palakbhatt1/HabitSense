@@ -8,7 +8,6 @@ import {
   eachDayOfInterval,
   isToday,
   addMonths,
-  parseISO,
 } from "date-fns";
 import { useHabits } from "../hooks/useHabits";
 import { useHabitEntries } from "../hooks/useHabitEntries";
@@ -16,17 +15,13 @@ import { HabitCheckbox } from "./HabitCheckbox";
 import { HabitIcon } from "@/components/shared/HabitIcon";
 import { AddEditHabitDialog } from "./AddEditHabitDialog";
 import { Habit } from "@/lib/storage/types";
-import { ChevronLeft, ChevronRight, Plus, Settings, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Settings } from "lucide-react";
 import { colorThemes } from "../utils/colors";
-import { ConfettiExplosion } from "@/components/shared/ConfettiExplosion";
-
 
 export function HabitGrid() {
   const [currentMonth, setCurrentMonth] = useState<Date>(() => new Date());
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [triggerConfetti, setTriggerConfetti] = useState(false);
-
 
   const { habits, saveHabit, deleteHabit } = useHabits();
 
@@ -68,7 +63,6 @@ export function HabitGrid() {
   };
 
   useEffect(() => {
-    // Auto scroll to today on load of current month
     const timer = setTimeout(() => {
       handleScrollToToday();
     }, 100);
@@ -78,7 +72,7 @@ export function HabitGrid() {
   const handleCheckboxClick = (habitId: string, dateStr: string) => {
     const key = `${habitId}_${dateStr}`;
     const currentStatus = entryMap.get(key) || "unmarked";
-    
+
     // Cycle: unmarked -> done -> missed -> unmarked
     let nextStatus: "done" | "missed" | "unmarked" = "done";
     if (currentStatus === "done") {
@@ -88,16 +82,12 @@ export function HabitGrid() {
     }
 
     setEntryStatus({ habitId, date: dateStr, status: nextStatus });
-
-    // Trigger confetti if this marks the last habit as done
-    const score = dailyCompletions[dateStr] || { done: 0, total: 0 };
-    if (nextStatus === "done" && score.done + 1 === score.total && score.total > 0) {
-      setTriggerConfetti(true);
-    }
   };
 
   const activeHabits = useMemo(() => {
-    return habits.filter((h) => !h.archivedAt).sort((a, b) => a.sortOrder - b.sortOrder);
+    return habits
+      .filter((h) => !h.archivedAt)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
   }, [habits]);
 
   // Calculate daily completion score
@@ -109,7 +99,6 @@ export function HabitGrid() {
       let total = 0;
 
       for (const h of activeHabits) {
-        // Enforce active checking based on creation date
         if (h.createdAt <= dateStr) {
           total++;
           const status = entryMap.get(`${h.id}_${dateStr}`) || "unmarked";
@@ -125,15 +114,14 @@ export function HabitGrid() {
 
   return (
     <div className="space-y-6">
-      {triggerConfetti && (
-        <ConfettiExplosion onComplete={() => setTriggerConfetti(false)} />
-      )}
       {/* Month Header controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-surface-bg border border-border-custom rounded-2xl p-4 shadow-sm">
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={() => setCurrentMonth((prev) => addMonths(prev, -1))}
             className="p-2 hover:bg-surface-muted border border-border-custom rounded-xl transition-colors text-text-muted hover:text-text-body focus:outline-none"
+            aria-label="Previous month"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -141,8 +129,10 @@ export function HabitGrid() {
             {format(currentMonth, "MMMM yyyy")}
           </h2>
           <button
+            type="button"
             onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
             className="p-2 hover:bg-surface-muted border border-border-custom rounded-xl transition-colors text-text-muted hover:text-text-body focus:outline-none"
+            aria-label="Next month"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -151,48 +141,52 @@ export function HabitGrid() {
         <div className="flex gap-2 w-full sm:w-auto">
           {format(currentMonth, "yyyy-MM") === format(new Date(), "yyyy-MM") && (
             <button
+              type="button"
               onClick={handleScrollToToday}
               className="flex-1 sm:flex-initial rounded-xl px-4 py-2 border border-border-custom hover:bg-surface-muted text-xs font-semibold text-text-body transition-colors"
             >
               Jump to Today
             </button>
           )}
-          <button
-            onClick={() => {
-              setEditingHabit(null);
-              setIsDialogOpen(true);
-            }}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 bg-text-heading text-surface-bg hover:opacity-95 text-xs font-semibold shadow-sm transition-opacity"
-          >
-            <Plus className="h-4 w-4" />
-            Add Habit
-          </button>
+          {activeHabits.length < 10 && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingHabit(null);
+                setIsDialogOpen(true);
+              }}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl px-4 py-2 bg-text-heading text-surface-bg hover:opacity-95 text-xs font-semibold shadow-sm transition-opacity"
+            >
+              <Plus className="h-4 w-4" />
+              Add Habit
+            </button>
+          )}
         </div>
       </div>
 
       {activeHabits.length === 0 ? (
         <div className="flex flex-col items-center justify-center text-center p-12 bg-surface-bg border border-border-custom rounded-2xl shadow-sm space-y-4">
-          <div className="p-4 bg-habit-violet/10 dark:bg-habit-violet/20 rounded-full text-habit-violet">
-            <Sparkles className="h-10 w-10 animate-pulse" />
-          </div>
           <div>
-            <h3 className="text-lg font-bold text-text-heading">Create your first habit</h3>
+            <h3 className="text-lg font-bold text-text-heading">
+              Create your first habit
+            </h3>
             <p className="text-sm text-text-muted mt-1 max-w-sm">
-              Growth looks beautiful on consistent days. Let's start tracking your routine.
+              Keep track of up to 10 daily routines on your monthly grid.
             </p>
           </div>
           <button
+            type="button"
             onClick={() => {
               setEditingHabit(null);
               setIsDialogOpen(true);
             }}
             className="rounded-xl px-4 py-2 bg-text-heading text-surface-bg hover:opacity-95 text-xs font-semibold shadow-sm transition-opacity"
           >
-            Add your first habit
+            Create your first habit
           </button>
         </div>
       ) : (
-        /* Monthly Habit Grid */
+        /* Monthly Habit Grid Table */
         <div className="bg-surface-bg border border-border-custom rounded-2xl shadow-sm overflow-hidden">
           <div
             ref={gridContainerRef}
@@ -201,9 +195,9 @@ export function HabitGrid() {
             <table className="w-full border-collapse table-fixed">
               <thead>
                 <tr className="border-b border-border-custom bg-surface-muted/40">
-                  {/* First cell: Habit labels */}
+                  {/* First column: Habit labels */}
                   <th className="sticky left-0 z-10 w-52 min-w-52 text-left px-4 py-3 bg-surface-bg font-semibold text-xs text-text-muted border-r border-border-custom">
-                    Habits
+                    Habits ({activeHabits.length}/10)
                   </th>
                   {/* Day numbers */}
                   {days.map((day) => {
@@ -221,9 +215,13 @@ export function HabitGrid() {
                       >
                         <div className="flex flex-col items-center">
                           <span>{format(day, "E").substring(0, 1)}</span>
-                          <span className={`mt-0.5 rounded-full w-5 h-5 flex items-center justify-center ${
-                            isColToday ? "bg-habit-violet text-white font-bold" : ""
-                          }`}>
+                          <span
+                            className={`mt-0.5 rounded-full w-5 h-5 flex items-center justify-center ${
+                              isColToday
+                                ? "bg-habit-violet text-white font-bold"
+                                : ""
+                            }`}
+                          >
                             {format(day, "d")}
                           </span>
                         </div>
@@ -234,7 +232,8 @@ export function HabitGrid() {
               </thead>
               <tbody>
                 {activeHabits.map((habit) => {
-                  const colorTheme = colorThemes[habit.color] || colorThemes.violet;
+                  const colorTheme =
+                    colorThemes[habit.color] || colorThemes.violet;
                   return (
                     <tr
                       key={habit.id}
@@ -244,6 +243,7 @@ export function HabitGrid() {
                       <td className="sticky left-0 z-10 px-4 py-3 bg-surface-bg border-r border-border-custom shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)]">
                         <div className="flex items-center justify-between group">
                           <button
+                            type="button"
                             onClick={() => {
                               setEditingHabit(habit);
                               setIsDialogOpen(true);
@@ -253,13 +253,17 @@ export function HabitGrid() {
                             <span
                               className={`p-1.5 rounded-lg shrink-0 ${colorTheme.bg} ${colorTheme.text}`}
                             >
-                              <HabitIcon name={habit.icon} className="h-4 w-4" />
+                              <HabitIcon
+                                name={habit.icon}
+                                className="h-4 w-4"
+                              />
                             </span>
                             <span className="text-sm font-semibold text-text-heading truncate group-hover:text-border-focus transition-colors">
                               {habit.name}
                             </span>
                           </button>
                           <button
+                            type="button"
                             onClick={() => {
                               setEditingHabit(habit);
                               setIsDialogOpen(true);
@@ -284,7 +288,9 @@ export function HabitGrid() {
                           <td
                             key={dateStr}
                             className={`py-2 text-center ${
-                              isColToday ? "bg-habit-violet/5 border-x border-habit-violet/10" : ""
+                              isColToday
+                                ? "bg-habit-violet/5 border-x border-habit-violet/10"
+                                : ""
                             }`}
                           >
                             {habitExists ? (
@@ -292,7 +298,9 @@ export function HabitGrid() {
                                 <HabitCheckbox
                                   status={status}
                                   color={habit.color}
-                                  onClick={() => handleCheckboxClick(habit.id, dateStr)}
+                                  onClick={() =>
+                                    handleCheckboxClick(habit.id, dateStr)
+                                  }
                                 />
                               </div>
                             ) : (
@@ -307,6 +315,28 @@ export function HabitGrid() {
                   );
                 })}
 
+                {/* Pinned 'Add Habit' row under the list */}
+                {activeHabits.length < 10 && (
+                  <tr className="border-b border-border-custom bg-surface-bg hover:bg-surface-muted/30 transition-colors">
+                    <td
+                      colSpan={days.length + 1}
+                      className="sticky left-0 px-4 py-2.5 z-10"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingHabit(null);
+                          setIsDialogOpen(true);
+                        }}
+                        className="flex items-center gap-2 text-xs font-semibold text-text-muted hover:text-text-heading transition-colors"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add Habit</span>
+                      </button>
+                    </td>
+                  </tr>
+                )}
+
                 {/* Daily Completion Footer Row */}
                 <tr className="border-t border-border-custom bg-surface-muted/30">
                   <td className="sticky left-0 z-10 px-4 py-3 bg-surface-bg border-r border-border-custom font-semibold text-xs text-text-muted">
@@ -315,8 +345,11 @@ export function HabitGrid() {
                   {days.map((day) => {
                     const dateStr = format(day, "yyyy-MM-dd");
                     const isColToday = isToday(day);
-                    const score = dailyCompletions[dateStr] || { done: 0, total: 0 };
-                    
+                    const score = dailyCompletions[dateStr] || {
+                      done: 0,
+                      total: 0,
+                    };
+
                     return (
                       <td
                         key={dateStr}
@@ -328,10 +361,14 @@ export function HabitGrid() {
                       >
                         {score.total > 0 ? (
                           <div className="flex flex-col items-center">
-                            <span>{score.done}/{score.total}</span>
+                            <span>
+                              {score.done}/{score.total}
+                            </span>
                             <span className="w-6 h-1 mt-0.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
                               <span
-                                style={{ width: `${(score.done / score.total) * 100}%` }}
+                                style={{
+                                  width: `${(score.done / score.total) * 100}%`,
+                                }}
                                 className="h-full block bg-text-heading dark:bg-border-focus"
                               />
                             </span>

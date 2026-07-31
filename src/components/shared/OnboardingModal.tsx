@@ -6,8 +6,7 @@ import { Habit, HabitColor } from "@/lib/storage/types";
 import { useQueryClient } from "@tanstack/react-query";
 import { HabitIcon } from "./HabitIcon";
 import { colorThemes } from "@/features/habits/utils/colors";
-import { Sparkles, ArrowRight, Check, Award } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Check, CheckCircle2 } from "lucide-react";
 
 interface StarterHabitOption {
   name: string;
@@ -29,18 +28,21 @@ export function OnboardingModal() {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
-  
+
   const [name, setName] = useState("");
   const [selectedStarters, setSelectedStarters] = useState<StarterHabitOption[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Check if onboarding completed
+    let active = true;
     storage.getMeta().then((meta) => {
-      if (!meta || !meta.onboardingCompletedAt) {
+      if (active && (!meta || !meta.onboardingCompletedAt)) {
         setIsOpen(true);
       }
     });
+    return () => {
+      active = false;
+    };
   }, [storage]);
 
   const toggleStarter = (option: StarterHabitOption) => {
@@ -99,7 +101,7 @@ export function OnboardingModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-neutral-900/60 backdrop-blur-md" />
+      <div className="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm" />
 
       {/* Modal Card */}
       <div className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl bg-surface-bg p-8 shadow-2xl border border-border-custom text-foreground">
@@ -115,144 +117,123 @@ export function OnboardingModal() {
           ))}
         </div>
 
-        {/* Step contents */}
-        <AnimatePresence mode="wait">
-          {step === 1 && (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
+        {/* Step 1: User name */}
+        {step === 1 && (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h3 className="text-xl font-bold text-text-heading">Welcome to HabitSense</h3>
+              <p className="text-xs text-text-muted max-w-xs mx-auto">
+                A simple, private habit and sleep tracker stored locally in your browser. What should we call you?
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-text-muted">Your Name</label>
+              <input
+                type="text"
+                required
+                maxLength={20}
+                placeholder="e.g. Alex"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-2xl border border-border-custom bg-transparent px-4 py-3 text-sm focus:border-border-focus focus:ring-2 focus:ring-ring-custom outline-none transition-all font-semibold"
+              />
+            </div>
+
+            <button
+              type="button"
+              disabled={!name.trim()}
+              onClick={handleNextStep}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 bg-text-heading text-surface-bg hover:opacity-90 disabled:opacity-50 transition-all font-semibold text-sm shadow-md"
             >
-              <div className="text-center space-y-2">
-                <div className="mx-auto w-12 h-12 rounded-full bg-habit-violet/10 dark:bg-habit-violet/20 flex items-center justify-center text-habit-violet">
-                  <Sparkles className="h-6 w-6" />
-                </div>
-                <h3 className="text-xl font-extrabold text-text-heading">Welcome to HabitSense</h3>
-                <p className="text-xs text-text-muted max-w-xs mx-auto">
-                  Let's make tracking your routines cozy and encouraging. What should we call you?
-                </p>
-              </div>
+              Get Started
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-text-muted">Your Name</label>
-                <input
-                  type="text"
-                  required
-                  maxLength={20}
-                  placeholder="e.g. Palak, Alex"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-2xl border border-border-custom bg-transparent px-4 py-3 text-sm focus:border-border-focus focus:ring-2 focus:ring-ring-custom outline-none transition-all font-semibold"
-                />
-              </div>
+        {/* Step 2: Starter Habits */}
+        {step === 2 && (
+          <div className="space-y-5">
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-bold text-text-heading">Select Starter Habits</h3>
+              <p className="text-xs text-text-muted max-w-xs mx-auto">
+                Choose any habits you want to begin tracking. You can add or edit more later.
+              </p>
+            </div>
 
+            <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto p-1 custom-scrollbar">
+              {STARTER_HABITS.map((option) => {
+                const isSelected = selectedStarters.some((o) => o.name === option.name);
+                const theme = colorThemes[option.color];
+                return (
+                  <button
+                    key={option.name}
+                    type="button"
+                    onClick={() => toggleStarter(option)}
+                    className={`flex flex-col items-start p-3 rounded-2xl border transition-all text-left ${
+                      isSelected
+                        ? `${theme.bg} ${theme.border} scale-[1.02] shadow-sm`
+                        : "bg-surface-bg border-border-custom hover:bg-surface-muted"
+                    }`}
+                  >
+                    <span className={`p-1.5 rounded-lg mb-2 shrink-0 ${theme.bg} ${theme.text}`}>
+                      <HabitIcon name={option.icon} className="h-4 w-4" />
+                    </span>
+                    <span className="text-xs font-bold text-text-heading truncate w-full">
+                      {option.name}
+                    </span>
+                    <div className="flex items-center justify-between w-full mt-1">
+                      <span className="text-[9px] text-text-muted capitalize">{option.color}</span>
+                      {isSelected && <Check className="h-3 w-3 text-habit-violet" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                disabled={!name.trim()}
+                onClick={() => setStep(1)}
+                className="flex-1 rounded-2xl py-3.5 bg-surface-muted text-text-body hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 font-semibold text-sm transition-colors"
+              >
+                Back
+              </button>
+              <button
+                type="button"
                 onClick={handleNextStep}
-                className="w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 bg-text-heading text-surface-bg hover:opacity-90 disabled:opacity-50 transition-all font-semibold text-sm shadow-md"
+                className="flex-1 rounded-2xl py-3.5 bg-text-heading text-surface-bg hover:opacity-90 font-semibold text-sm transition-opacity shadow-md"
               >
-                Let's get started
-                <ArrowRight className="h-4 w-4" />
+                Continue
               </button>
-            </motion.div>
-          )}
+            </div>
+          </div>
+        )}
 
-          {step === 2 && (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-5"
+        {/* Step 3: Confirmation */}
+        {step === 3 && (
+          <div className="space-y-6 text-center">
+            <div className="space-y-3">
+              <div className="mx-auto w-14 h-14 rounded-full bg-habit-green/10 border border-habit-green/30 flex items-center justify-center text-habit-green">
+                <CheckCircle2 className="h-7 w-7" />
+              </div>
+              <h3 className="text-xl font-bold text-text-heading">All Set, {name}!</h3>
+              <p className="text-xs text-text-muted leading-relaxed max-w-xs mx-auto">
+                Your tracker is ready. All your habits, streaks, and sleep logs are stored privately in your browser.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleComplete}
+              className="w-full rounded-2xl py-3.5 bg-text-heading text-surface-bg hover:opacity-90 disabled:opacity-50 transition-opacity font-semibold text-sm shadow-md"
             >
-              <div className="text-center space-y-2">
-                <h3 className="text-lg font-extrabold text-text-heading">Select Starter Habits</h3>
-                <p className="text-xs text-text-muted max-w-xs mx-auto">
-                  Pick a few suggested habits to bootstrap your tracking. You can edit them later.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto p-1 custom-scrollbar">
-                {STARTER_HABITS.map((option) => {
-                  const isSelected = selectedStarters.some((o) => o.name === option.name);
-                  const theme = colorThemes[option.color];
-                  return (
-                    <button
-                      key={option.name}
-                      type="button"
-                      onClick={() => toggleStarter(option)}
-                      className={`flex flex-col items-start p-3 rounded-2xl border transition-all text-left ${
-                        isSelected
-                          ? `${theme.bg} ${theme.border} scale-[1.02] shadow-sm`
-                          : "bg-surface-bg border-border-custom hover:bg-surface-muted"
-                      }`}
-                    >
-                      <span className={`p-1.5 rounded-lg mb-2 shrink-0 ${theme.bg} ${theme.text}`}>
-                        <HabitIcon name={option.icon} className="h-4 w-4" />
-                      </span>
-                      <span className="text-xs font-bold text-text-heading truncate w-full">
-                        {option.name}
-                      </span>
-                      <div className="flex items-center justify-between w-full mt-1">
-                        <span className="text-[9px] text-text-muted capitalize">{option.color}</span>
-                        {isSelected && <Check className="h-3 w-3 text-habit-violet" />}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="flex-1 rounded-2xl py-3.5 bg-surface-muted text-text-body hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 font-semibold text-sm transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="flex-1 rounded-2xl py-3.5 bg-text-heading text-surface-bg hover:opacity-90 font-semibold text-sm transition-opacity shadow-md"
-                >
-                  Continue
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {step === 3 && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6 text-center"
-            >
-              <div className="space-y-3">
-                <div className="mx-auto w-16 h-16 rounded-full bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/30 flex items-center justify-center text-green-500">
-                  <Award className="h-8 w-8 animate-bounce" />
-                </div>
-                <h3 className="text-xl font-extrabold text-text-heading">All Set, {name}!</h3>
-                <p className="text-xs text-text-muted leading-relaxed max-w-xs mx-auto">
-                  Consistency shapes our character, but remember: consistency tools should feel encouraging. Go easy on yourself and celebrate small wins!
-                </p>
-              </div>
-
-              <button
-                type="button"
-                disabled={isSubmitting}
-                onClick={handleComplete}
-                className="w-full rounded-2xl py-3.5 bg-text-heading text-surface-bg hover:opacity-90 disabled:opacity-50 transition-opacity font-semibold text-sm shadow-md"
-              >
-                {isSubmitting ? "Finalizing..." : "Go to Dashboard"}
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              {isSubmitting ? "Finalizing..." : "Go to Dashboard"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

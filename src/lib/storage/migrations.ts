@@ -2,14 +2,14 @@ import { ExportBundle } from "./types";
 
 export const CURRENT_SCHEMA_VERSION = 1;
 
-type MigrationFunction = (data: any) => any;
+type MigrationFunction = (data: Record<string, unknown>) => Record<string, unknown>;
 
 const migrations: Record<number, MigrationFunction> = {
   // E.g., 1: (data) => { ... return migratedData; }
 };
 
-export function migrateData(data: any): ExportBundle {
-  if (!data) {
+export function migrateData(data: unknown): ExportBundle {
+  if (!data || typeof data !== "object") {
     return {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       meta: {
@@ -25,37 +25,33 @@ export function migrateData(data: any): ExportBundle {
     };
   }
 
-  let version = data.schemaVersion || 0;
+  let record = data as Record<string, unknown>;
+  let version = typeof record.schemaVersion === "number" ? record.schemaVersion : 0;
 
   // Run all migrations in sequence
   while (version < CURRENT_SCHEMA_VERSION) {
     const nextVersion = version + 1;
     const migration = migrations[nextVersion];
     if (migration) {
-      data = migration(data);
+      record = migration(record);
     }
-    data.schemaVersion = nextVersion;
+    record.schemaVersion = nextVersion;
     version = nextVersion;
   }
 
   // Ensure default structures are present
-  if (!data.meta) {
-    data.meta = {
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-      userDisplayName: null,
-      themeMode: "light",
-      onboardingCompletedAt: null,
-      dailyIntentions: {},
-    };
-  } else {
-    data.meta.schemaVersion = CURRENT_SCHEMA_VERSION;
-  }
-  if (!data.meta.dailyIntentions) {
-    data.meta.dailyIntentions = {};
-  }
-  if (!data.habits) data.habits = [];
-  if (!data.entries) data.entries = [];
-  if (!data.sleep) data.sleep = [];
+  const meta = (record.meta && typeof record.meta === "object" ? record.meta : {}) as Record<
+    string,
+    unknown
+  >;
+  meta.schemaVersion = CURRENT_SCHEMA_VERSION;
+  if (!meta.themeMode) meta.themeMode = "light";
+  if (!meta.dailyIntentions) meta.dailyIntentions = {};
+  record.meta = meta;
 
-  return data as ExportBundle;
+  if (!Array.isArray(record.habits)) record.habits = [];
+  if (!Array.isArray(record.entries)) record.entries = [];
+  if (!Array.isArray(record.sleep)) record.sleep = [];
+
+  return record as unknown as ExportBundle;
 }

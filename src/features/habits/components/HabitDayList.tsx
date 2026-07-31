@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo } from "react";
 import {
   format,
   addDays,
@@ -15,25 +15,21 @@ import { HabitCheckbox } from "./HabitCheckbox";
 import { HabitIcon } from "@/components/shared/HabitIcon";
 import { calculateStreak } from "../utils/streak";
 import { colorThemes } from "../utils/colors";
-import { Calendar as CalendarIcon, Flame, ChevronLeft, ChevronRight, Plus, Sparkles } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Sparkles } from "lucide-react";
 import { AddEditHabitDialog } from "./AddEditHabitDialog";
 import { Habit } from "@/lib/storage/types";
 import { StreakFlame } from "@/components/shared/StreakFlame";
-import { ConfettiExplosion } from "@/components/shared/ConfettiExplosion";
-
 
 export function HabitDayList() {
   const [selectedDate, setSelectedDate] = useState<Date>(() => startOfDay(new Date()));
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
-  const [triggerConfetti, setTriggerConfetti] = useState(false);
-
 
   const { habits, saveHabit, deleteHabit } = useHabits();
 
   const selectedDateStr = format(selectedDate, "yyyy-MM-dd");
 
-  // Query entries for a 15-day range centered on selectedDate to optimize API requests
+  // Query entries for a 15-day range centered on selectedDate
   const fromDateStr = format(subDays(selectedDate, 7), "yyyy-MM-dd");
   const toDateStr = format(addDays(selectedDate, 7), "yyyy-MM-dd");
 
@@ -64,7 +60,7 @@ export function HabitDayList() {
   const handleCheckboxClick = (habitId: string, dateStr: string) => {
     const key = `${habitId}_${dateStr}`;
     const currentStatus = entryMap.get(key) || "unmarked";
-    
+
     // Cycle: unmarked -> done -> missed -> unmarked
     let nextStatus: "done" | "missed" | "unmarked" = "done";
     if (currentStatus === "done") {
@@ -74,12 +70,6 @@ export function HabitDayList() {
     }
 
     setEntryStatus({ habitId, date: dateStr, status: nextStatus });
-
-    // Trigger confetti if this marks the last habit as done
-    const score = dailySummary;
-    if (nextStatus === "done" && score.completed + 1 === score.total && score.total > 0) {
-      setTriggerConfetti(true);
-    }
   };
 
   // Filter habits active on selected day (created on or before)
@@ -91,7 +81,7 @@ export function HabitDayList() {
   const dailySummary = useMemo(() => {
     const total = habitsForSelectedDay.length;
     if (total === 0) return { completed: 0, total: 0, percent: 0 };
-    
+
     const completed = habitsForSelectedDay.filter(
       (h) => entryMap.get(`${h.id}_${selectedDateStr}`) === "done"
     ).length;
@@ -109,17 +99,16 @@ export function HabitDayList() {
     }
   };
 
+  const today = new Date();
+
   return (
     <div className="space-y-4">
-      {triggerConfetti && (
-        <ConfettiExplosion onComplete={() => setTriggerConfetti(false)} />
-      )}
       {/* Date Strip Navigation */}
       <div className="bg-surface-bg border border-border-custom rounded-2xl p-4 shadow-sm space-y-3">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-1 text-text-heading font-bold text-sm">
             <span>{format(selectedDate, "eeee, MMM d")}</span>
-            {isSameDay(selectedDate, new Date()) && (
+            {isSameDay(selectedDate, today) && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-habit-violet/10 text-habit-violet font-semibold">
                 Today
               </span>
@@ -134,6 +123,7 @@ export function HabitDayList() {
               value={selectedDateStr}
               onChange={handleDateChange}
               className="absolute inset-0 opacity-0 cursor-pointer w-full"
+              aria-label="Pick custom date"
             />
           </div>
         </div>
@@ -141,23 +131,22 @@ export function HabitDayList() {
         {/* Date Horizontal Strip */}
         <div className="flex items-center justify-between gap-1 select-none">
           <button
+            type="button"
             onClick={() => setSelectedDate((prev) => addDays(prev, -1))}
             className="p-1 text-text-muted hover:text-text-body"
+            aria-label="Previous day"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <div className="flex flex-1 justify-around gap-1 overflow-hidden">
             {dateStrip.map((day) => {
               const isSelected = isSameDay(day, selectedDate);
-              const isDayToday = isColToday(day);
-              
-              function isColToday(d: Date) {
-                return isSameDay(d, new Date());
-              }
+              const isDayToday = isSameDay(day, today);
 
               return (
                 <button
                   key={day.toISOString()}
+                  type="button"
                   onClick={() => setSelectedDate(startOfDay(day))}
                   className={`flex flex-col items-center justify-center w-10 py-1.5 rounded-xl transition-all ${
                     isSelected
@@ -168,11 +157,13 @@ export function HabitDayList() {
                   <span className="text-[9px] uppercase tracking-wider font-semibold opacity-75">
                     {format(day, "E").substring(0, 1)}
                   </span>
-                  <span className={`text-xs mt-0.5 ${
-                    isDayToday && !isSelected
-                      ? "text-habit-violet font-bold border-b border-habit-violet"
-                      : ""
-                  }`}>
+                  <span
+                    className={`text-xs mt-0.5 ${
+                      isDayToday && !isSelected
+                        ? "text-habit-violet font-bold border-b border-habit-violet"
+                        : ""
+                    }`}
+                  >
                     {format(day, "d")}
                   </span>
                 </button>
@@ -180,8 +171,10 @@ export function HabitDayList() {
             })}
           </div>
           <button
+            type="button"
             onClick={() => setSelectedDate((prev) => addDays(prev, 1))}
             className="p-1 text-text-muted hover:text-text-body"
+            aria-label="Next day"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -224,6 +217,7 @@ export function HabitDayList() {
             </div>
             {activeHabits.length === 0 && (
               <button
+                type="button"
                 onClick={() => setIsDialogOpen(true)}
                 className="rounded-xl px-3 py-1.5 bg-text-heading text-surface-bg hover:opacity-95 text-xs font-semibold shadow-sm transition-opacity"
               >
@@ -235,7 +229,7 @@ export function HabitDayList() {
           habitsForSelectedDay.map((habit) => {
             const colorTheme = colorThemes[habit.color] || colorThemes.violet;
             const status = entryMap.get(`${habit.id}_${selectedDateStr}`) || "unmarked";
-            
+
             // Calculate streak dynamically
             const streak = calculateStreak(habit, entries, selectedDateStr);
 
@@ -246,6 +240,7 @@ export function HabitDayList() {
               >
                 <div className="flex items-center gap-3">
                   <button
+                    type="button"
                     onClick={() => {
                       setEditingHabit(habit);
                       setIsDialogOpen(true);
@@ -257,6 +252,7 @@ export function HabitDayList() {
 
                   <div className="space-y-0.5">
                     <button
+                      type="button"
                       onClick={() => {
                         setEditingHabit(habit);
                         setIsDialogOpen(true);
@@ -291,17 +287,20 @@ export function HabitDayList() {
         )}
       </div>
 
-      {/* Floating Add Habit Button for Mobile */}
-      <button
-        onClick={() => {
-          setEditingHabit(null);
-          setIsDialogOpen(true);
-        }}
-        className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-border-focus text-text-muted hover:text-text-body font-semibold text-xs transition-colors bg-surface-bg/35"
-      >
-        <Plus className="h-4 w-4" />
-        Add Habit
-      </button>
+      {/* Pinned Add Habit Button under list */}
+      {activeHabits.length < 10 && (
+        <button
+          type="button"
+          onClick={() => {
+            setEditingHabit(null);
+            setIsDialogOpen(true);
+          }}
+          className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-border-focus text-text-muted hover:text-text-body font-semibold text-xs transition-colors bg-surface-bg/35"
+        >
+          <Plus className="h-4 w-4" />
+          Add Habit ({activeHabits.length}/10)
+        </button>
+      )}
 
       {/* Dialog overlay */}
       <AddEditHabitDialog

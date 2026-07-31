@@ -3,24 +3,28 @@
 import React, { useState, useEffect } from "react";
 import { useStorage } from "@/lib/storage/storage-provider";
 import { useQueryClient } from "@tanstack/react-query";
-import { Settings as SettingsIcon, Download, Upload, Trash2, User, Save, RefreshCw } from "lucide-react";
+import { Settings as SettingsIcon, Download, Upload, Trash2, User, Save, RefreshCw, ShieldCheck } from "lucide-react";
 import { CURRENT_SCHEMA_VERSION } from "@/lib/storage/migrations";
 
 export default function SettingsPage() {
   const storage = useStorage();
   const queryClient = useQueryClient();
-  
+
   const [name, setName] = useState("");
   const [isSavingName, setIsSavingName] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
+    let active = true;
     storage.getMeta().then((meta) => {
-      if (meta && meta.userDisplayName) {
+      if (active && meta && meta.userDisplayName) {
         setName(meta.userDisplayName);
       }
     });
+    return () => {
+      active = false;
+    };
   }, [storage]);
 
   const handleSaveName = async (e: React.FormEvent) => {
@@ -46,7 +50,10 @@ export default function SettingsPage() {
       )}`;
       const downloadAnchor = document.createElement("a");
       downloadAnchor.setAttribute("href", jsonString);
-      downloadAnchor.setAttribute("download", `habitsense_backup_${new Date().toISOString().split("T")[0]}.json`);
+      downloadAnchor.setAttribute(
+        "download",
+        `habitsense_backup_${new Date().toISOString().split("T")[0]}.json`
+      );
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -62,7 +69,7 @@ export default function SettingsPage() {
 
     setImportStatus("Importing...");
     const reader = new FileReader();
-    reader.onload = async (event) => {
+    reader.onload = async () => {
       try {
         const json = JSON.parse(reader.result as string);
         if (json.schemaVersion && Array.isArray(json.habits) && Array.isArray(json.entries)) {
@@ -103,9 +110,9 @@ export default function SettingsPage() {
           sleep: [],
         };
         await storage.importAll(emptyBundle);
-        queryClient.clear(); // Clears TanStack Query cache
+        queryClient.clear();
         alert("All data wiped successfully. Refreshing application...");
-        window.location.href = "/"; // Send back to root to trigger onboarding
+        window.location.href = "/";
       } catch (err) {
         console.error(err);
       } finally {
@@ -118,25 +125,38 @@ export default function SettingsPage() {
     <div className="space-y-6 max-w-2xl mx-auto">
       {/* Intro info header */}
       <div>
-        <h2 className="text-lg font-extrabold text-text-heading flex items-center gap-1.5 capitalize">
+        <h2 className="text-lg font-bold text-text-heading flex items-center gap-1.5 capitalize">
           <SettingsIcon className="h-5 w-5 text-habit-violet" />
           Settings
         </h2>
         <p className="text-xs text-text-muted mt-1 leading-normal">
-          Manage your display settings, backup data options, and core database.
+          Manage your display preferences, local backups, and data storage.
         </p>
       </div>
 
       <div className="space-y-6">
+        {/* Local Storage & Privacy Notice Card */}
+        <div className="bg-surface-bg border border-border-custom rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-text-heading">
+            <ShieldCheck className="h-4.5 w-4.5 text-habit-green" />
+            <span>Local Browser Storage</span>
+          </div>
+          <p className="text-xs text-text-muted leading-relaxed">
+            HabitSense runs entirely client-side. Your habit records and sleep durations are stored in your browser&apos;s <code className="bg-surface-muted px-1.5 py-0.5 rounded text-[11px] font-mono text-text-heading">localStorage</code>. There is no remote database, tracking, or cloud account. To transfer data across devices or create safe backups, use the export option below.
+          </p>
+        </div>
+
         {/* Profile/Display Name card */}
-        <div className="bg-surface-bg border border-border-custom rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="bg-surface-bg border border-border-custom rounded-2xl p-6 shadow-sm space-y-4">
           <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
             <User className="h-4 w-4 text-habit-violet" />
             Profile Preferences
           </h3>
           <form onSubmit={handleSaveName} className="flex gap-3 items-end max-w-md">
             <div className="flex-1 space-y-1">
-              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Display Name</label>
+              <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider">
+                Display Name
+              </label>
               <input
                 type="text"
                 required
@@ -158,14 +178,14 @@ export default function SettingsPage() {
         </div>
 
         {/* Database Export/Import backups card */}
-        <div className="bg-surface-bg border border-border-custom rounded-3xl p-6 shadow-sm space-y-5">
+        <div className="bg-surface-bg border border-border-custom rounded-2xl p-6 shadow-sm space-y-5">
           <div>
             <h3 className="text-sm font-bold text-text-heading flex items-center gap-2">
               <RefreshCw className="h-4 w-4 text-habit-violet" />
               Data Import & Export
             </h3>
             <p className="text-[10px] text-text-muted mt-0.5">
-              Back up your history locally as a JSON file or migrate data from another device.
+              Export your records as a JSON backup file or restore previously saved data.
             </p>
           </div>
 
@@ -176,12 +196,12 @@ export default function SettingsPage() {
               className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 border border-border-custom hover:bg-surface-muted text-xs font-semibold text-text-body transition-colors"
             >
               <Download className="h-4 w-4" />
-              Export Backup File
+              Export Backup JSON
             </button>
 
             <label className="flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 border border-border-custom hover:bg-surface-muted text-xs font-semibold text-text-body transition-colors cursor-pointer">
               <Upload className="h-4 w-4" />
-              <span>Import Backup File</span>
+              <span>Import Backup JSON</span>
               <input
                 type="file"
                 accept=".json"
@@ -198,14 +218,14 @@ export default function SettingsPage() {
         </div>
 
         {/* Danger zone card */}
-        <div className="bg-surface-bg border border-border-custom rounded-3xl p-6 shadow-sm space-y-4 border-red-200 dark:border-red-950/40">
+        <div className="bg-surface-bg border border-border-custom rounded-2xl p-6 shadow-sm space-y-4 border-red-200 dark:border-red-950/40">
           <div>
             <h3 className="text-sm font-bold text-red-500 flex items-center gap-2">
               <Trash2 className="h-4 w-4" />
               Danger Zone
             </h3>
             <p className="text-[10px] text-text-muted mt-0.5">
-              Permanently wipe all logs and statistics. This cannot be undone.
+              Permanently wipe all habits, logs, and settings from this browser. This cannot be undone.
             </p>
           </div>
 

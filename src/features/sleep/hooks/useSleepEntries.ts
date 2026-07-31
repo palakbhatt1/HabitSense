@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStorage } from "@/lib/storage/storage-provider";
-import { SleepEntry } from "@/lib/storage/types";
 
 export function useSleepEntries(from: string, to: string) {
   const storage = useStorage();

@@ -14,8 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HabitSense — Every habit shapes you.",
-  description: "A cozy habit, sleep, and routine tracker.",
+  title: "HabitSense — Habit and Sleep Tracker",
+  description: "A simple, private habit and sleep tracker.",
+  applicationName: "HabitSense",
+  appleWebApp: {
+    capable: true,
+    title: "HabitSense",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({

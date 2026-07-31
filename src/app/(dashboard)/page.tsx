@@ -12,14 +12,11 @@ import {
   format,
   startOfMonth,
   endOfMonth,
-  differenceInCalendarDays,
   parseISO,
-  isAfter,
-  isBefore,
 } from "date-fns";
-import { Flame, Moon, Award, CheckCircle2, TrendingUp, Calendar } from "lucide-react";
+import { Moon, Award, CheckCircle2, TrendingUp } from "lucide-react";
 import { StreakFlame } from "@/components/shared/StreakFlame";
-
+import Link from "next/link";
 
 export default function DashboardPage() {
   const todayStr = getLocalTodayStr();
@@ -50,7 +47,7 @@ export default function DashboardPage() {
   const todayStats = useMemo(() => {
     const total = activeHabits.filter((h) => h.createdAt <= todayStr).length;
     if (total === 0) return { completed: 0, total: 0, percent: 0 };
-    
+
     const completed = activeHabits.filter((h) => {
       const status = entryMap.get(`${h.id}_${todayStr}`);
       return status === "done";
@@ -67,31 +64,23 @@ export default function DashboardPage() {
   const donutData = useMemo(() => {
     const completed = todayStats.completed;
     const remaining = todayStats.total - completed;
-    
-    // Fallback for zero habits
+
     if (todayStats.total === 0) {
-      return [
-        { name: "Empty", value: 1, color: "var(--border-color)" }
-      ];
+      return [{ name: "Empty", value: 1, color: "var(--border-color)" }];
     }
 
     return [
-      { name: "Completed", value: completed, color: "#9B7FD4" }, // lavender
+      { name: "Completed", value: completed, color: "#9B7FD4" },
       { name: "Remaining", value: remaining, color: "var(--border-color)" },
     ];
   }, [todayStats]);
 
   // Habit completion rates for the selected month
   const habitCompletionProgress = useMemo(() => {
-    const todayObj = new Date();
-    
     return activeHabits.map((habit) => {
-      // Find start and end date for range calculation within this month
       const creationDate = habit.createdAt;
       const startRangeStr = creationDate > startMonthStr ? creationDate : startMonthStr;
-      
-      const todayISO = todayStr;
-      const endRangeStr = todayISO < endMonthStr ? todayISO : endMonthStr;
+      const endRangeStr = todayStr < endMonthStr ? todayStr : endMonthStr;
 
       const dateArray = getDateRangeArray(startRangeStr, endRangeStr);
       const totalDays = dateArray.length;
@@ -114,19 +103,23 @@ export default function DashboardPage() {
     });
   }, [activeHabits, entryMap, startMonthStr, endMonthStr, todayStr]);
 
-  // Weekly Overview Metrics
+  // Overview Metrics
   const overviewMetrics = useMemo(() => {
     // 1. Avg Sleep
     const loggedSleep = sleepEntries.filter((e) => e.hours > 0);
-    const avgSleep = loggedSleep.length > 0
-      ? Math.round((loggedSleep.reduce((acc, curr) => acc + curr.hours, 0) / loggedSleep.length) * 10) / 10
-      : 0;
+    const avgSleep =
+      loggedSleep.length > 0
+        ? Math.round(
+            (loggedSleep.reduce((acc, curr) => acc + curr.hours, 0) / loggedSleep.length) * 10
+          ) / 10
+        : 0;
 
     // 2. Avg Habit Completion
     const completions = habitCompletionProgress.filter((p) => p.totalDays > 0);
-    const avgCompletion = completions.length > 0
-      ? Math.round(completions.reduce((acc, curr) => acc + curr.percent, 0) / completions.length)
-      : 0;
+    const avgCompletion =
+      completions.length > 0
+        ? Math.round(completions.reduce((acc, curr) => acc + curr.percent, 0) / completions.length)
+        : 0;
 
     // 3. Current Max Streak
     let maxStreak = 0;
@@ -142,7 +135,7 @@ export default function DashboardPage() {
         completionsByDay[entry.date] = (completionsByDay[entry.date] || 0) + 1;
       }
     }
-    
+
     let bestDayStr = "N/A";
     let maxCompletions = 0;
     Object.entries(completionsByDay).forEach(([date, count]) => {
@@ -152,9 +145,8 @@ export default function DashboardPage() {
       }
     });
 
-    const bestDayFormatted = bestDayStr !== "N/A"
-      ? format(parseISO(bestDayStr), "MMM d")
-      : "N/A";
+    const bestDayFormatted =
+      bestDayStr !== "N/A" ? format(parseISO(bestDayStr), "MMM d") : "N/A";
 
     return {
       avgSleep,
@@ -169,14 +161,16 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        {/* Shimmer layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="h-64 animate-shimmer rounded-3xl border border-border-custom bg-surface-bg" />
           <div className="lg:col-span-2 h-64 animate-shimmer rounded-3xl border border-border-custom bg-surface-bg" />
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-28 animate-shimmer rounded-3xl border border-border-custom bg-surface-bg" />
+            <div
+              key={i}
+              className="h-28 animate-shimmer rounded-3xl border border-border-custom bg-surface-bg"
+            />
           ))}
         </div>
       </div>
@@ -185,14 +179,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Section: Radial today donut chart + Habit Progress bars */}
+      {/* Top Section: Today summary donut chart + Habit Progress bars */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Today's completion radial card */}
         <div className="bg-surface-bg border border-border-custom rounded-3xl p-6 shadow-sm flex flex-col justify-between h-72">
           <div>
             <h3 className="text-sm font-bold text-text-heading flex items-center gap-1.5">
               <CheckCircle2 className="h-4.5 w-4.5 text-habit-violet" />
-              Today's Summary
+              Today&apos;s Summary
             </h3>
             <p className="text-[11px] text-text-muted mt-0.5">Your daily routine completion score</p>
           </div>
@@ -214,8 +208,14 @@ export default function DashboardPage() {
                 <div className="text-center p-4">
                   <p className="text-xs font-semibold text-text-heading">No habits active today</p>
                   <p className="text-[9px] text-text-muted mt-1 leading-normal">
-                    Create habits or check back on active start dates!
+                    Create habits to start tracking!
                   </p>
+                  <Link
+                    href="/habits"
+                    className="inline-block mt-2 text-xs font-semibold text-habit-violet hover:underline"
+                  >
+                    Go to Habits
+                  </Link>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -240,7 +240,9 @@ export default function DashboardPage() {
           </div>
 
           <div className="text-center text-xs font-semibold text-text-muted">
-            {todayStats.percent}% finished today. Keep it up!
+            {todayStats.total > 0
+              ? `${todayStats.percent}% completed today.`
+              : "Track your habits to see daily progress."}
           </div>
         </div>
 
@@ -256,8 +258,14 @@ export default function DashboardPage() {
 
           <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3.5 pr-2 py-4">
             {habitCompletionProgress.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-xs text-text-muted">
-                No active habits. Go to Habits page to create one.
+              <div className="flex flex-col items-center justify-center h-full text-xs text-text-muted space-y-2">
+                <span>No active habits yet.</span>
+                <Link
+                  href="/habits"
+                  className="rounded-xl px-3 py-1.5 bg-text-heading text-surface-bg text-xs font-semibold"
+                >
+                  Create Habit
+                </Link>
               </div>
             ) : (
               habitCompletionProgress.map(({ habit, percent }) => {
@@ -294,7 +302,7 @@ export default function DashboardPage() {
       {/* Bottom Section: Weekly Overview Stats Cards */}
       <div className="space-y-3">
         <h3 className="text-xs font-extrabold uppercase tracking-wider text-text-muted pl-1">
-          Weekly Overview
+          Overview
         </h3>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
