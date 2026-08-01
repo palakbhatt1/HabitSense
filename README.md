@@ -1,71 +1,105 @@
 # HabitSense
 
-A clean, minimal habit and sleep tracker designed for personal consistency. 100% private, client-side, and installable as a Progressive Web App (PWA).
+A modern habit and sleep tracking app designed to make everyday routines easier to track, understand, and improve.
 
-All data lives securely in your browser's `localStorage`—no accounts, no cloud databases, and no tracking.
+HabitSense brings habit tracking, sleep logging, streaks, and progress analytics into one simple interface. The app focuses on making consistency visible through calendars, trends, and actionable statistics.
 
 ---
 
-## Features
+## What's Inside
 
-- **Habit Tracking**
-  - **Desktop Monthly Grid**: 31-day calendar matrix with color-coded habit rows, sticky habit names, and daily completion scores.
-  - **Mobile Day View**: Clean daily checklist with an interactive 7-day strip and date picker.
-  - **Three-State Checkboxes**: Quick cycling between unmarked, done, and missed.
-  - **10-Habit Limit**: Enforces focus on core daily routines. Supports archiving without losing history.
+### Habit Tracker
 
-- **Sleep Tracking**
-  - **Duration Logger**: Numeric stepper in 15-minute increments with quick-select presets.
-  - **Trend Chart**: Interactive area chart showing nightly hours and monthly average.
-  - **Paginated History**: Reverse-chronological sleep log with quick edit and deletion.
+* **Monthly Calendar Matrix** — View the entire month with color-coded habit completion and daily scores.
+* **Mobile Day View** — Focused daily checklist with a swipeable 7-day navigation strip.
+* **3-State Checkboxes** — Cycle between unmarked, completed, and missed.
+* **Habit Archiving** — Archive habits without losing historical progress.
+* **Completion Scores** — Track daily and monthly consistency across habits.
 
-- **Analytics & Trends**
-  - **30-Day Completion Trend**: Shared visual chart tracking overall routine consistency.
-  - **Monthly Highlights**: Quick glance at your best day, most consistent habit, and most-missed habit.
-  - **Sortable Stats Table**: View completion %, current streak, longest streak, and total days logged per habit.
+### Sleep Tracker
 
-- **Privacy & Data Portability**
-  - **Local-First**: Zero external servers or tracking.
-  - **Backup & Restore**: Export and import your data anytime as a JSON file.
+* Log sleep duration in **15-minute increments**.
+* View sleep trends over time.
+* Track average sleep duration.
+* Browse, edit, and review previous sleep records.
 
-- **Offline & PWA Ready**
-  - Installable on desktop and mobile browsers.
-  - Works offline with cached application shell and service worker fallback.
+### Analytics
+
+* **30-Day Consistency Trend** — Visualize consistency over time.
+* **Monthly Highlights** — See your best day, most consistent habit, and most-missed habit.
+* **Statistics Table** — Sort habits by completion rate and streaks.
+* **Progress Visualization** — Understand patterns through charts and aggregated statistics.
+
+### Offline-First
+
+* Works without requiring an account.
+* Stores application data directly in browser storage.
+* Supports JSON data export and restoration.
+* Installable as a **Progressive Web App (PWA)**.
+* Supports offline usage after installation.
 
 ---
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 (App Router) + TypeScript
-- **Styling**: Tailwind CSS
-- **Charts**: Recharts
-- **State & Data**: TanStack Query + LocalStorageAdapter
-- **Icons & Dates**: Lucide React, date-fns
+| Category      | Technology            |
+| ------------- | --------------------- |
+| Framework     | Next.js (App Router)  |
+| Language      | TypeScript            |
+| Styling       | Tailwind CSS          |
+| Charts        | Recharts              |
+| State / Data  | TanStack Query        |
+| Icons         | Lucide React          |
+| Date Handling | date-fns              |
+| Storage       | Browser Local Storage |
+| PWA           | Progressive Web App   |
 
 ---
 
-## Getting Started
+## Architecture
 
-```bash
-# Clone the repository
-git clone https://github.com/palakbhatt1/HabitSense.git
-cd HabitSense
+HabitSense follows a client-side, local-first architecture.
 
-# Install dependencies
-npm install
+```mermaid
+flowchart TD
+    subgraph App ["Next.js App"]
+        direction TB
+        HT["Habit Tracking"]
+        ST["Sleep Tracking"]
+        AN["Analytics"]
+        CV["Calendar / Day Views"]
+    end
 
-# Start development server
-npm run dev
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
+    App --> SM["State Management<br/>(TanStack Query)"]
+    SM --> BS[("Browser Storage<br/>(localStorage)")]
 ```
 
+The application does not require a backend API or cloud database for its core functionality, allowing the app to work directly from the browser.
+
 ---
 
-## License
+## Running Locally
 
-MIT
+### Clone the repository
+
+```bash
+git clone https://github.com/palakbhatt1/HabitSense.git
+cd HabitSense
+```
+
+### Install dependencies
+
+```bash
+npm install
+```
+
+### Start the development server
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:3000` in your browser.
+
+---
+
